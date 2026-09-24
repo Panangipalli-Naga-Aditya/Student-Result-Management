@@ -1,0 +1,10 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="{{ csrf }}">
+<title>Physics Results Hub</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"></head>
+<body><canvas id="bg"></canvas>
+<header class="nav"><a class="brand" href="#/">⚛ Physics Results Hub</a><button id="burger" aria-label="Menu">☰</button><nav id="nav"></nav></header>
+<main id="app"></main><div id="toasts"></div>
+<div id="modal" class="modal" hidden><div class="mbox"><button class="close" id="mclose">×</button><div id="mbody"></div></div></div>
+<footer>© Physics Results Hub · Built with Flask + SQLAlchemy</footer>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script></body></html>
