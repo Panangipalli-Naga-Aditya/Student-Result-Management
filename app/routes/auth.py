@@ -37,6 +37,43 @@ def register():
     return _login_response(u), 201
 
 
+@bp.post("/auth/teacher-register")
+def teacher_register():
+    """Create a new teacher account with administrator privileges."""
+    d = request.get_json(silent=True) or {}
+    name, teacher_id, email = (
+        d.get(k, "").strip() for k in ("name", "teacher_id", "email")
+    )
+    pw = d.get("password", "")
+
+    if not (name and teacher_id and email and pw):
+        return jsonify(error="All fields are required."), 400
+    if not re.match(r"^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", email):
+        return jsonify(error="Invalid email address."), 400
+    if len(pw) < 8:
+        return jsonify(error="Password must be at least 8 characters."), 400
+    if pw != d.get("confirm_password"):
+        return jsonify(error="Passwords do not match."), 400
+
+    # Teacher IDs share the same unique identifier column as student roll numbers,
+    # so one ID cannot accidentally belong to two accounts.
+    if User.query.filter(
+        (User.email == email.lower()) | (User.roll_number == teacher_id)
+    ).first():
+        return jsonify(error="Email or Teacher ID already registered. Please log in instead."), 409
+
+    u = User(
+        name=name,
+        roll_number=teacher_id,
+        email=email.lower(),
+        role="admin",
+    )
+    u.set_password(pw)
+    db.session.add(u)
+    db.session.commit()
+    return _login_response(u), 201
+
+
 @bp.post("/auth/student-login")
 def student_login():
     d = request.get_json(silent=True) or {}
