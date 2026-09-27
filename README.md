@@ -1,35 +1,42 @@
 # Physics Results Hub
-*One Platform. Every Result. Shared with the Class.*
 
-A Flask + SQLAlchemy web app where students upload, search, view and download physics results; faculty moderate from an admin dashboard.
+A Flask + SQLAlchemy web app where students upload, search, view and download physics results; faculty/teachers have a separate administrator login.
 
-## Features
-Registration/login (hashed passwords, session auth, CSRF), drag-and-drop upload with progress, extension + MIME + signature validation, UUID stored filenames, controlled view/download routes (login required), search/filter/sort on the backend, My Uploads with owner-only delete, Faculty dashboard (stats, recent uploads, delete with confirmation), responsive UI.
+## What was changed
+- Student registration and student login are separate from Teacher/Admin login.
+- Teacher/Admin accounts can manage the home-page notice.
+- The home page now displays a persistent notice/reminder box for comments, submission dates and announcements.
+- Student accounts are database records and are not recreated after the session expires.
+- Login uses a 30-day remember cookie so students can return later without being forced to log in again during that period.
+- Uploaded results remain linked to the student's account through `student_id` and appear in **My Uploads** after later logins.
+- Results remain shared in the class Results page, as in the original application.
 
-## Stack
-Python, Flask, Flask-SQLAlchemy, Flask-Login, Flask-WTF (CSRF), python-dotenv · SQLite (dev) → PostgreSQL (set `DATABASE_URL`) · vanilla HTML/CSS/JS.
+## IMPORTANT: persistence when deployed
+The database and uploaded files must be placed on persistent storage. A normal SQLite file and `uploads/` directory can disappear if your hosting provider rebuilds/restarts an ephemeral server.
+
+For production, preferably set:
+```text
+DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST/DATABASE
+DATA_DIR=/path/to/persistent/disk
+UPLOAD_FOLDER=/path/to/persistent/disk/uploads
+SECRET_KEY=<long-random-value>
+```
+
+If you are running the project locally on your computer, the default `data/physics_hub.db` and `data/uploads/` are persistent files and will remain after closing/restarting the app.
 
 ## Setup
 ```bash
 python -m venv venv
-source venv/bin/activate        # macOS/Linux
-venv\Scripts\activate           # Windows
+venv\\Scripts\\activate        # Windows
 pip install -r requirements.txt
-cp .env.example .env            # Windows: copy .env.example .env  (then set SECRET_KEY)
-python run.py                   # tables are created automatically; open http://127.0.0.1:5000
+copy .env.example .env
+python run.py
 ```
-Environment variables: `SECRET_KEY`, `DATABASE_URL`, `MAX_UPLOAD_MB`.
+Then open `http://127.0.0.1:5000`.
 
-## Admin account
-Register normally, then run `python create_admin.py` (promotes/creates a faculty admin).
-
-## Testing
-`python -m unittest tests.test_app` (registration, login/logout, PDF/TXT/PNG/DOCX upload, invalid + oversized rejection, search, filter, view, download, student vs admin deletion). To test manually: register two accounts, upload a file with one, download it with the other.
-
-## Deployment
+## Teacher/Admin account
+Register a normal student account first, then run:
 ```bash
-pip install gunicorn psycopg2-binary
-export SECRET_KEY=... DATABASE_URL=postgresql+psycopg2://user:pass@host/db
-gunicorn "run:app"
+python create_admin.py
 ```
-Serve over HTTPS, and keep `uploads/` on persistent storage (or swap `app/utils/files.py` for S3). For schema changes later, add Flask-Migrate.
+Use the promoted account through **Teacher/Admin Login**. Do not register a teacher through the public student registration form.
