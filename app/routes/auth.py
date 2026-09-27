@@ -21,7 +21,12 @@ def register():
     pw = d.get("password", "")
     if not (name and roll and email and pw):
         return jsonify(error="All fields are required."), 400
-    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+    # Accept normal academic/institutional addresses such as sbaggam@gitam.edu.
+    # Keep validation intentionally simple so valid college domains are not rejected.
+    email = email.strip().lower()
+    if (len(email) > 160 or " " in email or email.count("@") != 1
+            or email.startswith("@") or email.endswith("@")
+            or "." not in email.rsplit("@", 1)[1]):
         return jsonify(error="Invalid email address."), 400
     if len(pw) < 8:
         return jsonify(error="Password must be at least 8 characters."), 400
@@ -39,35 +44,27 @@ def register():
 
 @bp.post("/auth/teacher-register")
 def teacher_register():
-    """Create a new teacher account with administrator privileges."""
+    """Create a teacher account with administrator privileges."""
     d = request.get_json(silent=True) or {}
-    name, teacher_id, email = (
-        d.get(k, "").strip() for k in ("name", "teacher_id", "email")
-    )
+    name = str(d.get("name", "")).strip()
+    teacher_id = str(d.get("teacher_id", d.get("roll_number", ""))).strip()
+    email = str(d.get("email", "")).strip().lower()
     pw = d.get("password", "")
 
     if not (name and teacher_id and email and pw):
         return jsonify(error="All fields are required."), 400
-    if not re.match(r"^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", email):
+    if (len(email) > 160 or " " in email or email.count("@") != 1
+            or email.startswith("@") or email.endswith("@")
+            or "." not in email.rsplit("@", 1)[1]):
         return jsonify(error="Invalid email address."), 400
     if len(pw) < 8:
         return jsonify(error="Password must be at least 8 characters."), 400
     if pw != d.get("confirm_password"):
         return jsonify(error="Passwords do not match."), 400
-
-    # Teacher IDs share the same unique identifier column as student roll numbers,
-    # so one ID cannot accidentally belong to two accounts.
-    if User.query.filter(
-        (User.email == email.lower()) | (User.roll_number == teacher_id)
-    ).first():
+    if User.query.filter((User.email == email) | (User.roll_number == teacher_id)).first():
         return jsonify(error="Email or Teacher ID already registered. Please log in instead."), 409
 
-    u = User(
-        name=name,
-        roll_number=teacher_id,
-        email=email.lower(),
-        role="admin",
-    )
+    u = User(name=name, roll_number=teacher_id, email=email, role="admin")
     u.set_password(pw)
     db.session.add(u)
     db.session.commit()
